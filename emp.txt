@@ -1,0 +1,503 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Employee Management System</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js">
+    function downloadData() {
+      const data = JSON.stringify(employees, null, 2);
+      const blob = new Blob([data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'employees-data.json';
+      a.click();
+    }
+
+    // Dark-Light Mode Toggle
+    const modeBtn = document.createElement('button');
+    modeBtn.innerText = 'Toggle Theme';
+    modeBtn.style.marginBottom = '20px';
+    document.querySelector('.main').prepend(modeBtn);
+
+    modeBtn.addEventListener('click', () => {
+      document.body.classList.toggle('light');
+
+      if(document.body.classList.contains('light')) {
+        document.body.style.background = '#f1f5f9';
+        document.body.style.color = 'black';
+      } else {
+        document.body.style.background = 'linear-gradient(135deg, #0f172a, #1e293b)';
+        document.body.style.color = 'white';
+      }
+    });
+
+    // Fake Notifications
+    setTimeout(() => {
+      alert('Welcome to Employee Management System');
+    }, 1000);
+  </script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      color: white;
+      min-height: 100vh;
+      display: flex;
+    }
+
+    .sidebar {
+      width: 250px;
+      background: #111827;
+      padding: 20px;
+      box-shadow: 4px 0 10px rgba(0,0,0,0.3);
+    }
+
+    .sidebar h2 {
+      text-align: center;
+      margin-bottom: 30px;
+      color: #38bdf8;
+    }
+
+    .sidebar ul {
+      list-style: none;
+    }
+
+    .sidebar ul li {
+      padding: 15px;
+      margin: 10px 0;
+      background: #1f2937;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .sidebar ul li:hover {
+      background: #2563eb;
+    }
+
+    .main {
+      flex: 1;
+      padding: 20px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .topbar h1 {
+      color: #38bdf8;
+    }
+
+    .card-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.08);
+      padding: 20px;
+      border-radius: 20px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      transition: 0.3s;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+    }
+
+    .card h2 {
+      margin-bottom: 10px;
+      color: #facc15;
+    }
+
+    .form-section {
+      background: rgba(255,255,255,0.08);
+      padding: 20px;
+      border-radius: 20px;
+      margin-bottom: 30px;
+    }
+
+    .form-section h2 {
+      margin-bottom: 15px;
+      color: #38bdf8;
+    }
+
+    form {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+    }
+
+    input, select {
+      padding: 12px;
+      border: none;
+      border-radius: 10px;
+      outline: none;
+      font-size: 15px;
+    }
+
+    button {
+      padding: 12px;
+      border: none;
+      border-radius: 10px;
+      background: #2563eb;
+      color: white;
+      cursor: pointer;
+      transition: 0.3s;
+      font-size: 15px;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background: #1d4ed8;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: rgba(255,255,255,0.08);
+      border-radius: 15px;
+      overflow: hidden;
+    }
+
+    table th, table td {
+      padding: 15px;
+      text-align: center;
+    }
+
+    table th {
+      background: #1e40af;
+      color: white;
+    }
+
+    table tr:nth-child(even) {
+      background: rgba(255,255,255,0.05);
+    }
+
+    .delete-btn {
+      background: crimson;
+      padding: 8px 12px;
+    }
+
+    .delete-btn:hover {
+      background: darkred;
+    }
+
+    .chart-container {
+      background: rgba(255,255,255,0.08);
+      padding: 20px;
+      border-radius: 20px;
+      margin-top: 30px;
+    }
+
+    @media(max-width: 768px) {
+      body {
+        flex-direction: column;
+      }
+
+      .sidebar {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="sidebar">
+    <h2>EMS Pro Dashboard</h2>
+    <ul>
+      <li onclick="showSection('dashboardSection')">Dashboard</li>
+      <li onclick="showSection('formSection')">Add Employee</li>
+      <li onclick="showSection('recordsSection')">Employee Records</li>
+      <li onclick="showSection('analyticsSection')">Analytics</li>
+      <li onclick="showSection('attendanceSection')">Attendance</li>
+      <li onclick="showSection('settingsSection')">Settings</li>
+    </ul>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <h1>Employee Management System</h1>
+      <h3 id="dateTime"></h3>
+    </div>
+
+    <div id="dashboardSection" style="margin-bottom:20px; background:rgba(255,255,255,0.08); padding:20px; border-radius:20px; box-shadow:0 4px 10px rgba(0,0,0,0.3);">
+      <h2 style="color:#22c55e; margin-bottom:10px;">Welcome Admin 👋</h2>
+      <p style="line-height:1.7;">This smart Employee Management System helps manage employee records, salary analytics, attendance overview, and performance tracking with a modern graphical dashboard.</p>
+    </div>
+
+    <div class="card-container">
+      <div class="card">
+        <h2>Total Employees</h2>
+        <p id="totalEmployees">0</p>
+      </div>
+
+      <div class="card">
+        <h2>Total Salary</h2>
+        <p id="totalSalary">₹0</p>
+      </div>
+
+      <div class="card">
+        <h2>Departments</h2>
+        <p>HR, IT, Sales, Finance</p>
+      </div>
+
+      <div class="card">
+        <h2>Attendance</h2>
+        <p>96% Present</p>
+      </div>
+
+      <div class="card">
+        <h2>Status</h2>
+        <p>System Active</p>
+      </div>
+    </div>
+
+    <div class="form-section" id="formSection">
+      <h2>Add New Employee</h2>
+      <form id="employeeForm">
+        <input type="text" id="name" placeholder="Employee Name" required />
+        <input type="number" id="empId" placeholder="Employee ID" required />
+        <input type="email" id="email" placeholder="Email" required />
+        <input type="text" id="department" placeholder="Department" required />
+        <input type="number" id="salary" placeholder="Salary" required />
+        <select id="gender">
+          <option>Male</option>
+          <option>Female</option>
+          <option>Other</option>
+        </select>
+        <button type="submit">Add Employee</button>
+        <button type="button" onclick="downloadData()">Download Data</button>
+      </form>
+    </div>
+
+    <div class="table-section" id="recordsSection">
+      <h2 style="margin-bottom: 15px; color:#38bdf8;">Employee Records</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>ID</th>
+            <th>Email</th>
+            <th>Department</th>
+            <th>Salary</th>
+            <th>Gender</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="employeeTable"></tbody>
+      </table>
+    </div>
+
+    <div class="chart-container" id="analyticsSection">
+      <h2 style="margin-bottom:20px; color:#38bdf8;">Salary Distribution</h2>
+      <canvas id="salaryChart"></canvas>
+    </div>
+
+    <div id="attendanceSection" class="chart-container" style="display:none;">
+      <h2 style="margin-bottom:20px; color:#38bdf8;">Attendance Overview</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Department</th>
+            <th>Attendance %</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>IT</td><td>96%</td></tr>
+          <tr><td>HR</td><td>92%</td></tr>
+          <tr><td>Sales</td><td>89%</td></tr>
+          <tr><td>Finance</td><td>94%</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div id="settingsSection" class="chart-container" style="display:none;">
+      <h2 style="margin-bottom:20px; color:#38bdf8;">System Settings</h2>
+      <div style="display:flex; gap:20px; flex-wrap:wrap;">
+        <button onclick="changeTheme('dark')">Dark Theme</button>
+        <button onclick="changeTheme('light')">Light Theme</button>
+        <button onclick="clearAllEmployees()">Clear Employee Data</button>
+      </div>
+
+      <div style="margin-top:25px; line-height:1.8;">
+        <h3>Project Information</h3>
+        <p><b>Project:</b> Employee Management System</p>
+        <p><b>Technology:</b> HTML, CSS, JavaScript</p>
+        <p><b>Developer:</b> Harshil Sharma</p>
+        <p><b>Course:</b> BCA</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('employeeForm');
+    const table = document.getElementById('employeeTable');
+    const totalEmployees = document.getElementById('totalEmployees');
+    const totalSalary = document.getElementById('totalSalary');
+
+    let employees = JSON.parse(localStorage.getItem('employees')) || [];
+
+    function updateDateTime() {
+      const now = new Date();
+      document.getElementById('dateTime').innerText = now.toLocaleString();
+    }
+
+    setInterval(updateDateTime, 1000);
+    updateDateTime();
+
+    function showSection(sectionId) {
+      const sections = [
+        'dashboardSection',
+        'formSection',
+        'recordsSection',
+        'analyticsSection',
+        'attendanceSection',
+        'settingsSection'
+      ];
+
+      sections.forEach(id => {
+        const section = document.getElementById(id);
+        if(section) {
+          section.style.display = id === sectionId ? 'block' : 'none';
+        }
+      });
+    }
+
+    function changeTheme(mode) {
+      if(mode === 'light') {
+        document.body.style.background = '#e2e8f0';
+        document.body.style.color = 'black';
+      } else {
+        document.body.style.background = 'linear-gradient(135deg, #0f172a, #1e293b)';
+        document.body.style.color = 'white';
+      }
+    }
+
+    function clearAllEmployees() {
+      if(confirm('Delete all employee records?')) {
+        employees = [];
+        renderEmployees();
+      }
+    }
+
+    function renderEmployees() {
+      table.innerHTML = '';
+      let salarySum = 0;
+
+      employees.forEach((emp, index) => {
+        salarySum += Number(emp.salary);
+
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${emp.name}</td>
+          <td>${emp.id}</td>
+          <td>${emp.email}</td>
+          <td>${emp.department}</td>
+          <td>₹${emp.salary}</td>
+          <td>${emp.gender}</td>
+          <td><span style="background:#22c55e; padding:6px 10px; border-radius:20px;">Active</span></td>
+          <td>
+            <button class="delete-btn" onclick="deleteEmployee(${index})">Delete</button>
+          </td>
+        `;
+
+        table.appendChild(row);
+      });
+
+      totalEmployees.innerText = employees.length;
+      totalSalary.innerText = `₹${salarySum}`;
+
+      localStorage.setItem('employees', JSON.stringify(employees));
+      updateChart();
+    }
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const employee = {
+        name: document.getElementById('name').value,
+        id: document.getElementById('empId').value,
+        email: document.getElementById('email').value,
+        department: document.getElementById('department').value,
+        salary: document.getElementById('salary').value,
+        gender: document.getElementById('gender').value
+      };
+
+      employees.push(employee);
+      renderEmployees();
+      form.reset();
+    });
+
+    function deleteEmployee(index) {
+      employees.splice(index, 1);
+      renderEmployees();
+    }
+
+    let chart;
+
+    function updateChart() {
+      const ctx = document.getElementById('salaryChart').getContext('2d');
+
+      const labels = employees.map(emp => emp.name);
+      const data = employees.map(emp => emp.salary);
+
+      if(chart) {
+        chart.destroy();
+      }
+
+      chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Salary',
+            data: data,
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              labels: {
+                color: 'white'
+              }
+            }
+          },
+          scales: {
+            x: {
+              ticks: {
+                color: 'white'
+              }
+            },
+            y: {
+              ticks: {
+                color: 'white'
+              }
+            }
+          }
+        }
+      });
+    }
+
+    renderEmployees();
+  </script>
+</body>
+</html>
